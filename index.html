@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>₦10K Challenge</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#17191c;font-family:system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:900px;margin:auto;padding:16px 14px 40px}
+h1{margin:0;font-size:27px}.sub,.small,.muted{color:#6b7078;font-size:12px}.tabs{display:flex;gap:7px;overflow:auto;margin:16px 0 12px}.tabs button{width:auto;margin:0;padding:9px 13px;background:#e8eaee;color:#222}.tabs .active{background:#17191c;color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.card,.panel{background:#fff;border:1px solid #e1e3e6;border-radius:14px}.card{padding:13px}.label{font-size:11px;color:#70757d;text-transform:uppercase;letter-spacing:.05em}.value{font-size:20px;font-weight:750;margin-top:3px}.green{color:#16834b}.red{color:#d64545}
+.panel{padding:15px;margin-top:12px}.panel h2{font-size:17px;margin:0 0 11px}.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:12px;color:#70757d;display:block;margin-bottom:5px}
+input,button{width:100%;font:inherit;padding:11px;border-radius:10px}input{border:1px solid #cfd3d8}button{border:0;background:#17191c;color:#fff;font-weight:700;margin-top:10px}.secondary{background:#eceef1;color:#222}.danger{background:#fbe7e7;color:#9d2020}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hidden{display:none}.chart{height:290px}.chart canvas{width:100%;height:100%}.item{padding:12px 0;border-bottom:1px solid #eee}.item:last-child{border:0}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.badge{padding:4px 8px;border-radius:20px;font-size:10px;font-weight:700}.open{background:#eaf1ff;color:#2458bb}.won{background:#e5f6ed;color:#11663b}.lost{background:#fce9e9;color:#a92727}.void{background:#eee;color:#555}
+.table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:620px;font-size:12px}th,td{padding:9px 6px;border-bottom:1px solid #eee;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#70757d}.empty{text-align:center;padding:35px;color:#70757d}.footer{text-align:center;color:#888;font-size:11px;margin-top:18px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}.form{grid-template-columns:repeat(3,1fr)}}
+</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" href="icon-192.png"></head><body><div class="wrap">
+<h1>₦10K Challenge</h1><div class="sub">Personal bankroll experiment</div>
+<div class="tabs"><button class="active" onclick="tab('dash',this)">Dashboard</button><button onclick="tab('bets',this)">Bets</button><button onclick="tab('history',this)">History</button><button onclick="tab('backup',this)">Backup</button></div>
+
+<section id="dash"><div class="grid">
+<div class="card"><div class="label">Starting balance</div><div class="value">₦10,000</div></div>
+<div class="card"><div class="label">Current balance</div><div class="value" id="bal">₦10,000</div></div>
+<div class="card"><div class="label">Total return</div><div class="value" id="ret">0%</div></div>
+<div class="card"><div class="label">Available cash</div><div class="value" id="cash">₦10,000</div></div>
+<div class="card"><div class="label">Deployed capital</div><div class="value" id="dep">₦0</div></div>
+<div class="card"><div class="label">Open bets</div><div class="value" id="open">0</div></div>
+<div class="card"><div class="label">Total bets</div><div class="value" id="count">0</div></div>
+<div class="card"><div class="label">Profit / loss</div><div class="value" id="pnl">₦0</div></div>
+</div><div class="panel"><h2>Bankroll curve</h2><div class="chart"><canvas id="cv"></canvas></div></div>
+<div class="panel"><h2>Performance</h2><div class="grid">
+<div><div class="label">Win rate</div><div class="value" id="wr">0%</div></div><div><div class="label">Total staked</div><div class="value" id="st">₦0</div></div><div><div class="label">Betting ROI</div><div class="value" id="roi">0%</div></div><div><div class="label">Highest balance</div><div class="value" id="hi">₦10,000</div></div><div><div class="label">Lowest balance</div><div class="value" id="lo">₦10,000</div></div><div><div class="label">Max drawdown</div><div class="value" id="dd">0%</div></div>
+</div></div></section>
+
+<section id="bets" class="hidden"><div class="panel"><h2>Deploy a coupon</h2><div class="form">
+<div><label>Stake</label><input id="stake" type="number" min="0" step=".01" placeholder="2000"></div>
+<div><label>Odds</label><input id="odds" type="number" min="1" step=".01" placeholder="2.00"></div>
+<div><label>Description</label><input id="desc" placeholder="Coupon / matches"></div></div>
+<div class="small" id="pot">Potential payout: ₦0</div><button onclick="place()">Deploy capital</button></div>
+<div class="panel"><h2>Open bets</h2><div id="openList"></div></div>
+<div class="panel"><h2>Settled bets</h2><div id="closedList"></div></div></section>
+
+<section id="history" class="hidden"><div class="panel"><h2>Daily portfolio history</h2><div class="table"><table><thead><tr><th>Date</th><th>Opening</th><th>Closing</th><th>Change</th><th>Return</th><th>Cash</th><th>Deployed</th></tr></thead><tbody id="hist"></tbody></table></div></div></section>
+
+<section id="backup" class="hidden"><div class="panel"><h2>Export & backup</h2><div class="small">Keep regular backups. Local browser storage can be lost if browser/site data is cleared.</div><div class="actions"><button onclick="jsonOut()">Export JSON backup</button><button onclick="csvOut()">Export CSV</button></div><button class="secondary" onclick="document.getElementById('file').click()">Import JSON backup</button><input id="file" type="file" accept=".json" hidden onchange="jsonIn(event)"><button class="danger" onclick="resetDB()">Reset experiment</button></div></section>
+<div class="footer">Record-keeping tool only. No sportsbook or money account is connected.</div></div>
+
+<script>
+const K='n10k_final_v1';let db=JSON.parse(localStorage.getItem(K)||'null')||{bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};
+const M=n=>'₦'+Number(n).toLocaleString('en-NG',{maximumFractionDigits:2}),P=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
+function state(){let profit=db.bets.filter(b=>b.status==='WON'||b.status==='LOST').reduce((s,b)=>s+b.profit,0),open=db.bets.filter(b=>b.status==='OPEN'),dep=open.reduce((s,b)=>s+b.stake,0),cash=10000+profit-dep;return{cash,dep,balance:cash+dep,profit}}
+function save(){localStorage.setItem(K,JSON.stringify(db));render()}
+function place(){let s=+stake.value,o=+odds.value,d=desc.value.trim(),c=state();if(!(s>0)||s>c.cash)return alert('Stake must be greater than zero and no more than available cash.');if(!(o>=1))return alert('Enter valid odds.');db.bets.push({id:Date.now(),date:new Date().toISOString().slice(0,10),stake:s,odds:o,potential:s*o,desc:d,status:'OPEN',payout:0,profit:0});stake.value='';odds.value='';desc.value='';save()}
+function settle(id,r){let b=db.bets.find(x=>x.id===id);if(!b)return;if(r==='WON'){b.payout=b.stake*b.odds;b.profit=b.payout-b.stake}else if(r==='LOST'){b.payout=0;b.profit=-b.stake}else{b.payout=b.stake;b.profit=0;r='VOID'}b.status=r;b.settled=new Date().toISOString().slice(0,10);save()}
+function snapshot(){let s=state(),d=new Date().toISOString().slice(0,10),last=db.history.at(-1);if(last.date===d){last.closing=s.balance;last.cash=s.cash;last.deployed=s.dep}else db.history.push({date:d,opening:last.closing,closing:s.balance,cash:s.cash,deployed:s.dep});localStorage.setItem(K,JSON.stringify(db))}
+function render(){snapshot();let s=state(),r=(s.balance/10000-1)*100;bal.textContent=M(s.balance);cash.textContent=M(s.cash);dep.textContent=M(s.dep);ret.textContent=P(r);ret.className='value '+(r>=0?'green':'red');pnl.textContent=M(s.profit);pnl.className='value '+(s.profit>=0?'green':'red');open.textContent=db.bets.filter(b=>b.status==='OPEN').length;count.textContent=db.bets.length;
+let done=db.bets.filter(b=>b.status==='WON'||b.status==='LOST'),wins=done.filter(b=>b.status==='WON').length,staked=done.reduce((a,b)=>a+b.stake,0);wr.textContent=done.length?(wins/done.length*100).toFixed(2)+'%':'0%';st.textContent=M(staked);roi.textContent=staked?P(s.profit/staked*100):'0%';
+let vs=db.history.map(x=>x.closing),mx=Math.max(10000,...vs),mn=Math.min(10000,...vs);hi.textContent=M(mx);lo.textContent=M(mn);let peak=10000,maxdd=0;vs.forEach(v=>{peak=Math.max(peak,v);maxdd=Math.max(maxdd,(peak-v)/peak*100)});dd.textContent=maxdd.toFixed(2)+'%';
+openList.innerHTML=db.bets.filter(b=>b.status==='OPEN').map(b=>item(b,true)).join('')||'<div class="empty">No open bets.</div>';closedList.innerHTML=db.bets.filter(b=>b.status!=='OPEN').slice().reverse().map(b=>item(b,false)).join('')||'<div class="empty">No settled bets.</div>';
+hist.innerHTML=db.history.slice().reverse().map(x=>{let ch=x.closing-x.opening;return `<tr><td>${x.date}</td><td>${M(x.opening)}</td><td>${M(x.closing)}</td><td class="${ch>=0?'green':'red'}">${M(ch)}</td><td class="${ch>=0?'green':'red'}">${x.opening?P(ch/x.opening*100):'0%'}</td><td>${M(x.cash)}</td><td>${M(x.deployed)}</td></tr>`}).join('');draw()}
+function item(b,open){return `<div class="item"><div class="row"><b>${b.desc||'Coupon'}</b><span class="badge ${b.status.toLowerCase()}">${b.status}</span></div><div class="small">${b.date} · Stake ${M(b.stake)} · Odds ${b.odds.toFixed(2)} · Potential ${M(b.potential)}</div>${open?`<div class="actions"><button onclick="settle(${b.id},'WON')">Won</button><button class="danger" onclick="settle(${b.id},'LOST')">Lost</button></div><button class="secondary" onclick="settle(${b.id},'VOID')">Void / refund</button>`:`<div class="small">Payout ${M(b.payout)} · P/L <span class="${b.profit>=0?'green':'red'}">${M(b.profit)}</span></div>`}</div>`}
+function draw(){let c=document.getElementById('cv'),w=c.clientWidth||350,h=290,d=devicePixelRatio||1;c.width=w*d;c.height=h*d;let x=c.getContext('2d');x.scale(d,d);let v=db.history.map(a=>a.closing),mi=Math.min(0,...v),ma=Math.max(10000,...v),sp=Math.max(1,ma-mi),L=58,R=10,T=15,B=28;x.font='11px system-ui';x.strokeStyle='#e3e5e8';x.fillStyle='#70757d';for(let i=0;i<5;i++){let y=T+(h-T-B)*i/4,val=ma-(ma-mi)*i/4;x.beginPath();x.moveTo(L,y);x.lineTo(w-R,y);x.stroke();x.fillText(M(val),4,y+4)}if(v.length<2)return; x.strokeStyle='#2867d8';x.lineWidth=2;x.beginPath();v.forEach((q,i)=>{let xx=L+(w-L-R)*i/(v.length-1),yy=T+(ma-q)/sp*(h-T-B);i?x.lineTo(xx,yy):x.moveTo(xx,yy)});x.stroke();v.forEach((q,i)=>{let xx=L+(w-L-R)*i/(v.length-1),yy=T+(ma-q)/sp*(h-T-B);x.fillStyle=q>=10000?'#16834b':'#d64545';x.beginPath();x.arc(xx,yy,3.5,0,7);x.fill()})}
+function tab(id,b){document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}
+odds.addEventListener('input',()=>pot.textContent='Potential payout: '+M((+stake.value||0)*(+odds.value||0)));
+function dl(name,data,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
+function jsonOut(){dl('n10k-challenge-backup.json',JSON.stringify(db,null,2),'application/json')}
+function csvOut(){let a=[['Date','ID','Description','Stake','Odds','Potential Payout','Status','Actual Payout','Profit/Loss','Settled']];db.bets.forEach(b=>a.push([b.date,b.id,b.desc,b.stake,b.odds,b.potential,b.status,b.payout,b.profit,b.settled||'']));dl('n10k-bets.csv',a.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\\n'),'text/csv')}
+function jsonIn(e){let f=e.target.files[0];if(!f)return;let q=new FileReader();q.onload=()=>{try{let x=JSON.parse(q.result);if(!Array.isArray(x.bets)||!Array.isArray(x.history))throw 0;db=x;save();alert('Backup restored.')}catch{alert('Invalid backup.')}};q.readAsText(f)}
+function resetDB(){if(confirm('Delete this experiment from this browser? Export a backup first if needed.')){db={bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};save()}}
+render();
+</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));}</script></body></html>
