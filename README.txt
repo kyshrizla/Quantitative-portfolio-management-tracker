@@ -1,1 +1,0 @@
-Portfolio Tracker v2: renamed app; separate additions/withdrawals; cash movements excluded from Performance Chart.
