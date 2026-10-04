@@ -1,4 +1,5 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tracker</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#17191c;font-family:system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:900px;margin:auto;padding:16px 14px 40px}
 h1{margin:0;font-size:27px}.sub,.small,.muted{color:#6b7078;font-size:12px}.tabs{display:flex;gap:7px;overflow:auto;margin:16px 0 12px}.tabs button{width:auto;margin:0;padding:9px 13px;background:#e8eaee;color:#222}.tabs .active{background:#17191c;color:#fff}
@@ -57,8 +58,8 @@ function draw(){let c=document.getElementById('cv'),w=c.clientWidth||350,h=290,d
 function tab(id,b){document.querySelectorAll('section').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');render()}
 odds.addEventListener('input',()=>pot.textContent='Potential payout: '+M((+stake.value||0)*(+odds.value||0)));
 function dl(name,data,type){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type}));a.download=name;a.click()}
-function jsonOut(){dl('n10k-challenge-backup.json',JSON.stringify(db,null,2),'application/json')}
-function csvOut(){let a=[['Date','ID','Description','Stake','Odds','Potential Payout','Status','Actual Payout','Profit/Loss','Settled']];db.bets.forEach(b=>a.push([b.date,b.id,b.desc,b.stake,b.odds,b.potential,b.status,b.payout,b.profit,b.settled||'']));dl('n10k-bets.csv',a.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\\n'),'text/csv')}
+function jsonOut(){dl('portfolio-tracker-backup.json',JSON.stringify(db,null,2),'application/json')}
+function csvOut(){let a=[['Date','ID','Description','Stake','Odds','Potential Payout','Status','Actual Payout','Profit/Loss','Settled']];db.bets.forEach(b=>a.push([b.date,b.id,b.desc,b.stake,b.odds,b.potential,b.status,b.payout,b.profit,b.settled||'']));dl('portfolio-bets.csv',a.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n'),'text/csv')}
 function jsonIn(e){let f=e.target.files[0];if(!f)return;let q=new FileReader();q.onload=()=>{try{let x=JSON.parse(q.result);if(!Array.isArray(x.bets)||!Array.isArray(x.history))throw 0;db=x;save();alert('Backup restored.')}catch{alert('Invalid backup.')}};q.readAsText(f)}
 function resetDB(){if(confirm('Delete this experiment from this browser? Export a backup first if needed.')){db={bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};save()}}
 render();
@@ -126,4 +127,5 @@ function panel(){
 window.addEventListener("load",()=>setTimeout(panel,100));
 })();
 </script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'))}</script>
 </body></html>
