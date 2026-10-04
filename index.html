@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>₦10K Challenge</title>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Portfolio Tracker</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#17191c;font-family:system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:900px;margin:auto;padding:16px 14px 40px}
 h1{margin:0;font-size:27px}.sub,.small,.muted{color:#6b7078;font-size:12px}.tabs{display:flex;gap:7px;overflow:auto;margin:16px 0 12px}.tabs button{width:auto;margin:0;padding:9px 13px;background:#e8eaee;color:#222}.tabs .active{background:#17191c;color:#fff}
@@ -8,8 +8,8 @@ input,button{width:100%;font:inherit;padding:11px;border-radius:10px}input{borde
 .hidden{display:none}.chart{height:290px}.chart canvas{width:100%;height:100%}.item{padding:12px 0;border-bottom:1px solid #eee}.item:last-child{border:0}.row{display:flex;justify-content:space-between;gap:8px;align-items:center}.badge{padding:4px 8px;border-radius:20px;font-size:10px;font-weight:700}.open{background:#eaf1ff;color:#2458bb}.won{background:#e5f6ed;color:#11663b}.lost{background:#fce9e9;color:#a92727}.void{background:#eee;color:#555}
 .table{overflow:auto}table{width:100%;border-collapse:collapse;min-width:620px;font-size:12px}th,td{padding:9px 6px;border-bottom:1px solid #eee;text-align:right}th:first-child,td:first-child{text-align:left}th{color:#70757d}.empty{text-align:center;padding:35px;color:#70757d}.footer{text-align:center;color:#888;font-size:11px;margin-top:18px}
 @media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}.form{grid-template-columns:repeat(3,1fr)}}
-</style><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#111827"><link rel="apple-touch-icon" href="icon-192.png"></head><body><div class="wrap">
-<h1>₦10K Challenge</h1><div class="sub">Personal bankroll experiment</div>
+</style></head><body><div class="wrap">
+<h1>Portfolio Tracker</h1><p style='color:#666'>Performance reflects settled wins and losses only. Additions and withdrawals are tracked separately.</p><div class="sub">Personal bankroll experiment</div>
 <div class="tabs"><button class="active" onclick="tab('dash',this)">Dashboard</button><button onclick="tab('bets',this)">Bets</button><button onclick="tab('history',this)">History</button><button onclick="tab('backup',this)">Backup</button></div>
 
 <section id="dash"><div class="grid">
@@ -40,7 +40,7 @@ input,button{width:100%;font:inherit;padding:11px;border-radius:10px}input{borde
 <div class="footer">Record-keeping tool only. No sportsbook or money account is connected.</div></div>
 
 <script>
-const K='n10k_final_v1';let db=JSON.parse(localStorage.getItem(K)||'null')||{bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};
+const K='portfolio_tracker_v2';let db=JSON.parse(localStorage.getItem(K)||'null')||{bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};
 const M=n=>'₦'+Number(n).toLocaleString('en-NG',{maximumFractionDigits:2}),P=n=>(n>=0?'+':'')+n.toFixed(2)+'%';
 function state(){let profit=db.bets.filter(b=>b.status==='WON'||b.status==='LOST').reduce((s,b)=>s+b.profit,0),open=db.bets.filter(b=>b.status==='OPEN'),dep=open.reduce((s,b)=>s+b.stake,0),cash=10000+profit-dep;return{cash,dep,balance:cash+dep,profit}}
 function save(){localStorage.setItem(K,JSON.stringify(db));render()}
@@ -62,4 +62,68 @@ function csvOut(){let a=[['Date','ID','Description','Stake','Odds','Potential Pa
 function jsonIn(e){let f=e.target.files[0];if(!f)return;let q=new FileReader();q.onload=()=>{try{let x=JSON.parse(q.result);if(!Array.isArray(x.bets)||!Array.isArray(x.history))throw 0;db=x;save();alert('Backup restored.')}catch{alert('Invalid backup.')}};q.readAsText(f)}
 function resetDB(){if(confirm('Delete this experiment from this browser? Export a backup first if needed.')){db={bets:[],history:[{date:new Date().toISOString().slice(0,10),opening:10000,closing:10000,cash:10000,deployed:0}]};save()}}
 render();
-</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js"));}</script></body></html>
+</script>
+<script>
+(function(){
+const KEY="portfolio_tracker_v2", START=10000;
+function db(){
+  try{
+    let x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem("n10k_final_v1")||"{}");
+    x.bets=Array.isArray(x.bets)?x.bets:[]; x.history=Array.isArray(x.history)?x.history:[];
+    x.cashFlows=Array.isArray(x.cashFlows)?x.cashFlows:[]; return x;
+  }catch(e){return {bets:[],history:[],cashFlows:[]}}
+}
+function save(x){localStorage.setItem(KEY,JSON.stringify(x))}
+function profit(x){return x.bets.reduce((s,b)=>s+(b.status&&b.status!=="OPEN"?Number(b.profit||0):0),0)}
+function flow(x){return x.cashFlows.reduce((s,f)=>s+(f.type==="addition"?Number(f.amount):-Number(f.amount)),0)}
+function deployed(x){return x.bets.filter(b=>String(b.status).toUpperCase()==="OPEN").reduce((s,b)=>s+Number(b.stake||0),0)}
+function balance(x){return START+flow(x)+profit(x)}
+function available(x){return balance(x)-deployed(x)}
+window.PortfolioTracker={
+ db,save,profit,flow,deployed,balance,available,
+ performanceSeries(x){
+   let v=START, out=[{date:"Start",value:v}];
+   x.bets.filter(b=>String(b.status).toUpperCase()!=="OPEN")
+    .sort((a,b)=>String(a.settledAt||a.date||"").localeCompare(String(b.settledAt||b.date||"")))
+    .forEach(b=>{v+=Number(b.profit||0);out.push({date:b.settledAt||b.date||"Settlement",value:v})});
+   return out;
+ },
+ addCashFlow(type,amount,note,date){
+   let x=db(), a=Number(amount);
+   if(!Number.isFinite(a)||a<=0) throw Error("Enter a valid positive amount.");
+   if(type==="withdrawal" && a>available(x)) throw Error("Withdrawal exceeds available balance.");
+   x.cashFlows.push({id:"CF-"+Date.now(),date:date||new Date().toISOString().slice(0,10),type,amount:a,note:note||"",balanceAfter:balance(x)+(type==="addition"?a:-a)});
+   save(x); return x;
+ }
+};
+function money(n){return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+function render(){
+ let x=db(), rows=document.getElementById("cfRows"), sum=document.getElementById("cfSummary"); if(!rows)return;
+ rows.innerHTML=(x.cashFlows||[]).slice().reverse().map(f=>`<tr><td>${esc(f.date)}</td><td>${f.type==="addition"?"Addition":"Withdrawal"}</td><td>${f.type==="addition"?"+":"-"}${money(f.amount).slice(1)}</td><td>${esc(f.note)}</td></tr>`).join("")||'<tr><td colspan="4">No cash flows recorded.</td></tr>';
+ let adds=x.cashFlows.filter(f=>f.type==="addition").reduce((s,f)=>s+Number(f.amount),0), ws=x.cashFlows.filter(f=>f.type==="withdrawal").reduce((s,f)=>s+Number(f.amount),0);
+ sum.innerHTML=`<b>Current Balance:</b> ${money(balance(x))} &nbsp; | &nbsp; <b>Available:</b> ${money(available(x))} &nbsp; | &nbsp; <b>Deployed:</b> ${money(deployed(x))}<br><small>Net contributions: ${money(adds-ws)}</small>`;
+}
+function panel(){
+ if(document.getElementById("cashFlowPanel"))return;
+ let p=document.createElement("section");p.id="cashFlowPanel";
+ p.style.cssText="margin:24px 0;padding:18px;border:1px solid #ddd;border-radius:14px;background:#fff";
+ p.innerHTML=`<h2>Cash Flow</h2><p style="color:#666">Additions and withdrawals affect portfolio balance, but never the Performance Chart.</p>
+ <div style="display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+ <select id="cfType"><option value="addition">Add money</option><option value="withdrawal">Withdraw money</option></select>
+ <input id="cfAmount" type="number" min="0" step="0.01" placeholder="Amount"><input id="cfDate" type="date"><input id="cfNote" placeholder="Note (optional)"></div>
+ <button id="cfSave" style="margin-top:10px;padding:10px">Record Cash Flow</button><div id="cfMsg"></div><div id="cfSummary" style="margin-top:12px"></div>
+ <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody id="cfRows"></tbody></table></div>`;
+ (document.querySelector("main")||document.body).appendChild(p);
+ document.getElementById("cfDate").value=new Date().toISOString().slice(0,10);
+ document.getElementById("cfSave").onclick=()=>{
+  let msg=document.getElementById("cfMsg");
+  try{PortfolioTracker.addCashFlow(document.getElementById("cfType").value,document.getElementById("cfAmount").value,document.getElementById("cfNote").value,document.getElementById("cfDate").value);msg.textContent="Cash flow recorded.";document.getElementById("cfAmount").value="";document.getElementById("cfNote").value="";render()}
+  catch(e){msg.textContent=e.message}
+ };
+ render();
+}
+window.addEventListener("load",()=>setTimeout(panel,100));
+})();
+</script>
+</body></html>
